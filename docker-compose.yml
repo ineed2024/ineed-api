@@ -1,0 +1,13 @@
+version: '3.5'
+services:
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: INEED-API
+    ports:
+      - '3000:${PORT}'
+    env_file:
+      - .env
+    environment:
+      - NODE_ENV=production

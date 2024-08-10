@@ -1,0 +1,386 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlserver"
+  url      = env("DATABASE_URL")
+}
+
+model MigrationHistory {
+  MigrationId    String @db.NVarChar(150)
+  ContextKey     String @db.NVarChar(300)
+  Model          Bytes
+  ProductVersion String @db.NVarChar(32)
+
+  @@id([MigrationId, ContextKey], map: "PK_dbo.__MigrationHistory")
+  @@map("__MigrationHistory")
+}
+
+model Acesso {
+  Id        Int     @id(map: "PK_dbo.Acesso") @default(autoincrement())
+  Token     String  @db.NVarChar(200)
+  UsuarioId Int
+  Device    String  @db.NVarChar(200)
+  FcmToken  String? @db.NVarChar(Max)
+  Usuario   Usuario @relation(fields: [UsuarioId], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "FK_dbo.Acesso_dbo.Usuario_UsuarioId")
+
+  @@index([UsuarioId], map: "IX_UsuarioId")
+}
+
+model Avaliacao {
+  id         Int     @id(map: "PK_dbo.Avaliacao") @default(autoincrement()) @map("Id")
+  nota       Int     @map("Nota")
+  observacao String? @map("Observacao") @db.NVarChar(Max)
+
+  orcamento Orcamento[]
+  visita    Visita[]
+}
+
+model Categoria {
+  id           Int     @id(map: "PK_dbo.Categoria") @default(autoincrement()) @map("Id")
+  valor        String  @map("valor") @db.NVarChar(Max)
+  imagem       String  @map("Imagem") @db.NVarChar(Max)
+  inativo      Boolean @map("Inativo")
+  categoriaPai Int?    @map("CategoriaPai")
+
+  servico Servico[]
+}
+
+model Cidade {
+  Id       Int     @id(map: "PK_dbo.Cidade") @default(autoincrement())
+  EstadoId Int
+  Nome     String? @db.NVarChar(Max)
+  Capital  Boolean
+  Atendida Boolean
+  Estado   Estado  @relation(fields: [EstadoId], references: [Id], onDelete: Cascade, onUpdate: NoAction, map: "FK_dbo.Cidade_dbo.Estado_EstadoId")
+
+  @@index([EstadoId], map: "IX_EstadoId")
+}
+
+model Configuracao {
+  id                            Int   @id(map: "PK_dbo.Configuracao") @default(autoincrement()) @map("Id")
+  maximoParcelas                Int   @map("MaximoParcelas")
+  taxaVisitasUrgentes           Float @map("TaxaVisitasUrgentes")
+  maximoOrcamentos              Int
+  descontoPadrao                Int
+  usoRestanteCupom              Int
+  diasValidadeCupom             Int
+  maximoCupomDescontoDeUsuarios Int
+}
+
+model CreditCardEfi {
+  id         Int     @id(map: "PK_dbo.CreditCardEfi") @default(autoincrement()) @map("Id")
+  numberMask String? @map("NumberMask") @db.NVarChar(Max)
+  cardToken  String? @map("CardToken") @db.NVarChar(Max)
+  userId     Int     @map("UserId")
+  inativo    Boolean @map("Inativo")
+
+  requisicao Requisicao[]
+}
+
+model Cupom {
+  id     Int     @id(map: "PK_dbo.Cupom") @default(autoincrement()) @map("Id")
+  codigo String? @map("Codigo") @db.NVarChar(Max)
+
+  cupomAdmin CupomAdmin[]
+  usuario    Usuario[]
+}
+
+model CupomAdmin {
+  id          Int     @id(map: "PK_dbo.CupomAdmin") @default(autoincrement()) @map("Id")
+  cupomId     Int     @map("CupomId")
+  ativo       Boolean @map("Ativo")
+  usosMaximos Int     @map("UsosMaximos")
+  taxa        Int     @map("Taxa")
+
+  cupom Cupom @relation(fields: [cupomId], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "FK_dbo.CupomAdmin_dbo.Cupom_CupomId")
+
+  @@index([cupomId], map: "IX_CupomId")
+}
+
+model CupomAdminUsers {
+  Id        Int @id(map: "PK_dbo.CupomAdminUsers") @default(autoincrement())
+  CupomId   Int
+  UsuarioId Int
+}
+
+model Desconto {
+  id      Int     @id(map: "PK_dbo.Desconto") @default(autoincrement()) @map("Id")
+  taxa    Int     @map("Taxa")
+  ativado Boolean @map("Ativado")
+  userId  Int     @map("UserId")
+  cupomId Int?    @map("CupomId")
+}
+
+model Estado {
+  Id     Int      @id(map: "PK_dbo.Estado") @default(autoincrement())
+  Nome   String?  @db.NVarChar(Max)
+  Sigla  String?  @db.NVarChar(Max)
+  Regiao String?  @db.NVarChar(Max)
+  Cidade Cidade[]
+}
+
+model ImagemOrcamento {
+  id          Int    @id(map: "PK_dbo.ImagemOrcamento") @default(autoincrement()) @map("Id")
+  valor       String @map("Valor") @db.NVarChar(Max)
+  orcamentoId Int    @map("OrcamentoId")
+
+  Orcamento Orcamento @relation(fields: [orcamentoId], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "FK_dbo.ImagemOrcamento_dbo.Orcamento_OrcamentoId")
+
+  @@index([orcamentoId], map: "IX_OrcamentoId")
+}
+
+model ImagemSolicitacao {
+  id            Int    @id(map: "PK_dbo.ImagemSolicitacao") @default(autoincrement()) @map("Id")
+  valor         String @map("Valor") @db.NVarChar(Max)
+  solicitacaoId Int    @map("SolicitacaoId")
+
+  solicitacao Solicitacao @relation(fields: [solicitacaoId], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "FK_dbo.ImagemSolicitacao_dbo.Solicitacao_SolicitacaoId")
+
+  @@index([solicitacaoId], map: "IX_SolicitacaoId")
+}
+
+model IMovel {
+  Id    Int     @id(map: "PK_dbo.IMovel") @default(autoincrement())
+  Valor String? @db.NVarChar(Max)
+}
+
+model Orcamento {
+  id            Int      @id(map: "PK_dbo.Orcamento") @default(autoincrement()) @map("Id")
+  usuarioId     Int      @map("UsuarioId")
+  dataEntrega   DateTime @map("DataEntrega") @db.DateTime
+  dataCriacao   DateTime @map("DataCriacao") @db.DateTime
+  solicitacaoId Int      @map("SolicitacaoId")
+  observacao    String?  @map("Observacao") @db.NVarChar(Max)
+  maoObra       Decimal  @map("MaoObra") @db.Decimal(18, 2)
+  concluido     Boolean  @map("Concluido")
+  pago          Boolean  @map("Pago")
+  material      Decimal  @map("Material") @db.Decimal(18, 2)
+  diarioObra    String?  @map("DiarioObra") @db.NVarChar(Max)
+  requisicaoId  Int?     @map("RequisicaoId")
+  avaliacaoId   Int?     @map("AvaliacaoId")
+  transacaoId   Int?     @map("TransacaoId")
+
+  taxasExtras        TaxaExtra[]
+  imagem             ImagemOrcamento[]
+  usuarioColaborador OrcamentoUsuarioColaborador[]
+
+  avaliacao   Avaliacao?  @relation(fields: [avaliacaoId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "FK_dbo.Orcamento_dbo.Avaliacao_AvaliacaoId")
+  transacao   Transacao?  @relation(fields: [transacaoId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "FK_dbo.Orcamento_dbo.Transacao_TransacaoId")
+  requisicao  Requisicao? @relation(fields: [requisicaoId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "FK_dbo.Orcamento_dbo.Requisicao_RequisicaoId")
+  solicitacao Solicitacao @relation(fields: [solicitacaoId], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "FK_dbo.Orcamento_dbo.Solicitacao_SolicitacaoId")
+
+  @@index([avaliacaoId], map: "IX_AvaliacaoId")
+  @@index([transacaoId], map: "IX_TransacaoId")
+  @@index([requisicaoId], map: "IX_RequisicaoId")
+  @@index([solicitacaoId], map: "IX_SolicitacaoId")
+}
+
+model OrcamentoUsuarioColaborador {
+  orcamentoId          Int
+  usuarioColaboradorId Int
+
+  orcamento Orcamento @relation(fields: [orcamentoId], references: [id], onUpdate: NoAction, map: "FK_dbo.OrcamentoUsuarioColaborador_dbo.Orcamento_OrcamentoId")
+  usuario   Usuario   @relation(fields: [usuarioColaboradorId], references: [id], onUpdate: NoAction, map: "FK_dbo.OrcamentoUsuarioColaborador_dbo.Usuario_UsuarioColaboradorId")
+
+  @@id([orcamentoId, usuarioColaboradorId], map: "PK_dbo.OrcamentoUsuarioColaborador")
+  @@index([orcamentoId], map: "IX_OrcamentoId")
+  @@index([usuarioColaboradorId], map: "IX_UsuarioColaboradorId")
+}
+
+model Perfil {
+  Id    Int    @id(map: "PK_dbo.Perfil") @default(autoincrement())
+  Valor String @db.NVarChar(50)
+}
+
+model Requisicao {
+  id               Int     @id(map: "PK_dbo.Requisicao") @default(autoincrement()) @map("Id")
+  merchantOrderId  String? @map("MerchantOrderId") @db.NVarChar(Max)
+  parcela          Int     @map("Parcela")
+  usuarioId        Int     @map("UsuarioId")
+  cartaoId         Int     @map("CartaoId")
+  valorParcela     Int     @default(0, map: "DF__Requisica__Valor__14270015") @map("ValorParcela")
+  status           String? @map("Status") @db.NVarChar(Max)
+  tipoDePagamento  String? @map("TipoDePagamento") @db.NVarChar(Max)
+  chargeId         Int     @default(0, map: "DF__Requisica__Charg__17036CC0") @map("ChargeId")
+  total            Int     @default(0, map: "DF__Requisica__Total__17F790F9") @map("Total")
+  descricao        String? @map("Descricao") @db.NVarChar(Max)
+  creditCardEfi_Id Int?    @map("CreditCardEfi_Id")
+
+  visita    Visita[]
+  orcamento Orcamento[]
+
+  usuario       Usuario        @relation(fields: [usuarioId], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "FK_dbo.Requisicao_dbo.Usuario_UsuarioId")
+  creditCardEfi CreditCardEfi? @relation(fields: [creditCardEfi_Id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "FK_dbo.Requisicao_dbo.CreditCardEfi_CreditCardEfi_Id")
+
+  @@index([creditCardEfi_Id], map: "IX_CreditCardEfi_Id")
+  @@index([usuarioId], map: "IX_UsuarioId")
+}
+
+model Servico {
+  id                Int      @id(map: "PK_dbo.Servico") @default(autoincrement()) @map("Id")
+  nome              String   @map("Nome") @db.NVarChar(Max)
+  descricao         String   @map("Descricao") @db.NVarChar(Max)
+  imagem            String?  @map("imagem") @db.NVarChar(Max)
+  dataCadastro      DateTime @map("DataCadastro") @db.DateTime
+  idUsuarioCadastro Int      @map("IdUsuarioCadastro")
+  categoriaId       Int      @map("CategoriaId")
+  inativo           Boolean  @map("Inativo")
+
+  servicoSolicitacao ServicoSolicitacao[]
+
+  categoria Categoria @relation(fields: [categoriaId], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "FK_dbo.Servico_dbo.Categoria_CategoriaId")
+
+  @@index([categoriaId], map: "IX_CategoriaId")
+}
+
+model ServicoSolicitacao {
+  id            Int @id(map: "PK_dbo.ServicoSolicitacao") @default(autoincrement()) @map("Id")
+  servicoId     Int @map("ServicoId")
+  solicitacaoId Int @map("SolicitacaoId")
+
+  servico     Servico     @relation(fields: [servicoId], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "FK_dbo.ServicoSolicitacao_dbo.Servico_ServicoId")
+  solicitacao Solicitacao @relation(fields: [solicitacaoId], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "FK_dbo.ServicoSolicitacao_dbo.Solicitacao_SolicitacaoId")
+
+  @@index([servicoId], map: "IX_ServicoId")
+  @@index([solicitacaoId], map: "IX_SolicitacaoId")
+}
+
+model Solicitacao {
+  id              Int       @id(map: "PK_dbo.Solicitacao") @default(autoincrement()) @map("Id")
+  dataSolicitacao DateTime  @map("DataSolicitacao") @db.DateTime
+  usuarioId       Int       @map("UsuarioId")
+  dataInicial     DateTime? @map("DataInicial") @db.DateTime
+  dataFinal       DateTime? @map("DataFinal") @db.DateTime
+  avaliacao       Int?      @map("Avaliacao")
+  endereco        String?   @map("Endereco") @db.NVarChar(Max)
+  observacao      String?   @map("Observacao") @db.NVarChar(Max)
+  material        Boolean   @map("Material")
+  urgente         Boolean   @map("Urgente")
+  iMovelId        Int       @map("IMovelId")
+  ativo           Boolean   @map("Ativo")
+
+  visitas            Visita[]
+  orcamentos         Orcamento[]
+  imagem             ImagemSolicitacao[]
+  servicoSolicitacao ServicoSolicitacao[]
+
+  usuario Usuario @relation(fields: [usuarioId], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "FK_dbo.Solicitacao_dbo.Usuario_UsuarioId")
+
+  @@index([usuarioId], map: "IX_UsuarioId")
+}
+
+model TaxaExtra {
+  id          Int     @id(map: "PK_dbo.TaxaExtra") @default(autoincrement()) @map("Id")
+  valor       Decimal @map("Valor") @db.Decimal(18, 2)
+  pago        Boolean @map("Pago")
+  orcamentoId Int     @map("OrcamentoId")
+
+  Orcamento Orcamento @relation(fields: [orcamentoId], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "FK_dbo.TaxaExtra_dbo.Orcamento_OrcamentoId")
+
+  @@index([orcamentoId], map: "IX_OrcamentoId")
+}
+
+model Tipo {
+  id    Int     @id(map: "PK_dbo.Tipo") @default(autoincrement()) @map("Id")
+  valor String? @map("Valor") @db.NVarChar(Max)
+
+  usuario Usuario[]
+}
+
+model TipoCartao {
+  Id    Int     @id(map: "PK_dbo.TipoCartao") @default(autoincrement())
+  Valor String? @db.NVarChar(Max)
+}
+
+model Transacao {
+  id               Int      @id(map: "PK_dbo.Transacao") @default(autoincrement()) @map("Id")
+  dataCriacao      DateTime @map("DataCriacao") @db.DateTime
+  code             String?  @map("Code") @db.NVarChar(Max)
+  reference        String?  @map("Reference") @db.NVarChar(Max)
+  statusId         Int      @map("StatusId")
+  paymentLink      String?  @map("PaymentLink") @db.NVarChar(Max)
+  paymentMethod    Int      @map("PaymentMethod")
+  installmentCount Int      @map("InstallmentCount")
+
+  visita    Visita[]
+  orcamento Orcamento[]
+}
+
+model Usuario {
+  id               Int       @id(map: "PK_dbo.Usuario") @default(autoincrement()) @map("Id")
+  nome             String    @map("Nome") @db.NVarChar(200)
+  email            String    @map("Email") @db.NVarChar(100)
+  senha            String    @map("Senha") @db.NVarChar(200)
+  rg               String?   @map("Rg") @db.NVarChar(Max)
+  cpfCnpj          String?   @map("CpfCnpj") @db.NVarChar(18)
+  endereco         String?   @map("Endereco") @db.NVarChar(Max)
+  numero           Int?      @map("Numero")
+  cep              String?   @map("Cep") @db.NVarChar(Max)
+  telefone         String?   @map("Telefone") @db.NVarChar(Max)
+  cidade           String?   @map("Cidade") @db.NVarChar(Max)
+  imagemUrl        String?   @map("ImagemUrl") @db.NVarChar(Max)
+  uf               String?   @map("Uf") @db.NVarChar(Max)
+  perfilId         Int       @map("PerfilId")
+  tipoId           Int       @map("TipoId")
+  dataAniversario  DateTime? @map("DataAniversario") @db.DateTime
+  contaRedeSocial  Boolean   @map("ContaRedeSocial")
+  inativo          Boolean   @map("Inativo")
+  complemento      String?   @map("Complemento") @db.NVarChar(Max)
+  criadoEm         DateTime  @map("CriadoEm") @db.DateTime
+  idTipoRedeSocial Int       @map("IdTipoRedeSocial")
+  idRedeSocial     String?   @map("IdRedeSocial") @db.NVarChar(Max)
+  cupomId          Int?      @map("CupomId")
+  bairro           String?   @map("Bairro") @db.NVarChar(Max)
+
+  acesso                      Acesso[]
+  orcamentoUsuarioColaborador OrcamentoUsuarioColaborador[]
+  requisicao                  Requisicao[]
+  solicitacao                 Solicitacao[]
+  cupom                       Cupom?                        @relation(fields: [cupomId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "FK_dbo.Usuario_dbo.Cupom_CupomId")
+  tipo                        Tipo                          @relation(fields: [tipoId], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "FK_dbo.Usuario_dbo.Tipo_TipoId")
+  visitaUsuarioColaborador    VisitaUsuarioColaborador[]
+
+  @@index([cupomId], map: "IX_CupomId")
+  @@index([tipoId], map: "IX_TipoId")
+}
+
+model Visita {
+  id            Int      @id(map: "PK_dbo.Visita") @default(autoincrement()) @map("Id")
+  valor         Decimal  @map("Valor") @db.Decimal(18, 2)
+  observacao    String?  @map("Observacao") @db.NVarChar(Max)
+  profissionais String?  @map("Profissionais") @db.NVarChar(Max)
+  dataVisita    DateTime @map("DataVisita") @db.DateTime
+  dataCriacao   DateTime @map("DataCriacao") @db.DateTime
+  concluida     Boolean  @map("Concluida")
+  pago          Boolean  @map("Pago")
+  solicitacaoId Int      @map("SolicitacaoId")
+  requisicaoId  Int?     @map("RequisicaoId")
+  avaliacaoId   Int?     @map("AvaliacaoId")
+  transacaoId   Int?     @map("TransacaoId")
+
+  usuarioColaborador VisitaUsuarioColaborador[]
+
+  avaliacao   Avaliacao?  @relation(fields: [avaliacaoId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "FK_dbo.Visita_dbo.Avaliacao_AvaliacaoId")
+  transacao   Transacao?  @relation(fields: [transacaoId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "FK_dbo.Visita_dbo.Transacao_TransacaoId")
+  requisicao  Requisicao? @relation(fields: [requisicaoId], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "FK_dbo.Visita_dbo.Requisicao_RequisicaoId")
+  solicitacao Solicitacao @relation(fields: [solicitacaoId], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "FK_dbo.Visita_dbo.Solicitacao_SolicitacaoId")
+
+  @@index([avaliacaoId], map: "IX_AvaliacaoId")
+  @@index([requisicaoId], map: "IX_RequisicaoId")
+  @@index([solicitacaoId], map: "IX_SolicitacaoId")
+  @@index([transacaoId], map: "IX_TransacaoId")
+}
+
+model VisitaUsuarioColaborador {
+  visitaId             Int @map("VisitaId")
+  usuarioColaboradorId Int @map("UsuarioColaboradorId")
+
+  visita  Visita  @relation(fields: [visitaId], references: [id], onUpdate: NoAction, map: "FK_dbo.VisitaUsuarioColaborador_dbo.Visita_VisitaId")
+  usuario Usuario @relation(fields: [usuarioColaboradorId], references: [id], onUpdate: NoAction, map: "FK_dbo.VisitaUsuarioColaborador_dbo.Usuario_UsuarioColaboradorId")
+
+  @@id([visitaId, usuarioColaboradorId], map: "PK_dbo.VisitaUsuarioColaborador")
+  @@index([visitaId], map: "IX_VisitaId")
+  @@index([usuarioColaboradorId], map: "IX_UsuarioColaboradorId")
+}
